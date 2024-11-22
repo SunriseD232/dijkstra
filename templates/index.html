@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Алгоритм Дейкстры</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        .container {
+            display: flex;
+            justify-content: space-between;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .form-container {
+            width: 45%;
+        }
+        .graph-container {
+            width: 45%;
+        }
+        form {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        label {
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="text"] {
+            width: calc(50% - 5px);
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #000000;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #ffa500;
+            color: #000000;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+            transition: background-color 0.3s ease;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #ba6c2d;
+        }
+        pre {
+            background-color: #f0f0f0;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+        #graphVisualization {
+            width: 100%;
+            height: 400px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            margin-top: 20px;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .preset-container {
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .preset-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+    </style>
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+</head>
+<body>
+
+    <h1>Алгоритм Дейкстры</h1>
+
+    <div class="container">
+        <div class="form-container">
+            <div class="preset-container">
+                <label>Выберите предустановленный граф:</label>
+                <div class="preset-buttons">
+                    <button type="button" onclick="loadPresetGraph('simpleGraph1')">Граф 1</button>
+                    <button type="button" onclick="loadPresetGraph('simpleGraph2')">Граф 2</button>
+                </div>
+            </div>
+
+            <form id="graphForm">
+                <label>Добавление ноды:</label>
+                <div class="input-group">
+                    <input type="text" id="nodeId" placeholder="ID ноды">
+                    <button type="button" onclick="addNode()">Добавить ноду</button>
+                </div>
+
+                <label>Добавление связи:</label>
+                <div class="input-group">
+                    <input type="text" id="fromNode" placeholder="Из ноды">
+                    <input type="text" id="toNode" placeholder="В ноду">
+                    <input type="text" id="edgeWeight" placeholder="Вес">
+                    <button type="button" onclick="addEdge()">Добавить связь</button>
+                </div>
+
+                <label for="start">Стартовая нода для алгоритма:</label>
+                <input type="text" id="start" name="start" value="A"><br><br>
+
+                <button type="button" onclick="submitForm()">Запустить алгоритм Дейкстры</button>
+                <button type="button" onclick="clearGraph()">Очистить</button>
+            </form>
+            <h2>Результат:</h2>
+            <pre id="result">Результат отобразится здесь...</pre>
+        </div>
+
+        <div class="graph-container">
+            <h2>Визуализация графа:</h2>
+            <div id="graphVisualization"></div>
+        </div>
+    </div>
+
+    <script>
+        let graphData = {
+            nodes: new vis.DataSet(),
+            edges: new vis.DataSet()
+        };
+
+        let graph = {};
+        let network;
+
+        function visualizeGraph() {
+            const container = document.getElementById('graphVisualization');
+            const options = {
+                edges: {
+                    smooth: false,
+                    font: {
+                        size: 14,
+                        color: '#000',
+                        align: 'top'
+                    }
+                },
+                layout: {
+                    randomSeed: undefined,
+                },
+                interaction: {
+                    tooltipDelay: 200
+                }
+            };
+
+            network = new vis.Network(container, graphData, options);
+        }
+
+        function loadPresetGraph(preset) {
+            graphData.nodes.clear();
+            graphData.edges.clear();
+            graph = {};
+
+            if (preset === "simpleGraph1") {
+                // Заранее заготовленный граф 1
+                graph = {
+                    A: { B: 1, C: 4 },
+                    B: { A: 1, C: 2, D: 5 },
+                    C: { A: 4, B: 2, D: 1 },
+                    D: { B: 5, C: 1 }
+                };
+            } else if (preset === "simpleGraph2") {
+                // Заранее заготовленный граф 2
+                graph = {
+                    A: { B: 2 },
+                    B: { A: 2, C: 3, D: 1 },
+                    C: { B: 3 },
+                    D: { B: 1, C: 5 }
+                };
+            }
+
+            // Добавляем ноды и связи в визуализацию
+            for (let node in graph) {
+                graphData.nodes.add({ id: node, label: node });
+                for (let neighbor in graph[node]) {
+                    graphData.edges.add({
+                        from: node,
+                        to: neighbor,
+                        label: String(graph[node][neighbor]),
+                        font: { align: 'top' }
+                    });
+                }
+            }
+
+            network.stabilize();
+        }
+
+        function addNode() {
+            const nodeId = document.getElementById('nodeId').value.trim();
+            if (nodeId && !graph[nodeId]) {
+                graph[nodeId] = {};
+                graphData.nodes.add({
+                    id: nodeId,
+                    label: nodeId,
+                    x: Math.random() * 400 - 200,
+                    y: Math.random() * 400 - 200
+                });
+                document.getElementById('nodeId').value = '';
+                network.stabilize();
+            }
+        }
+
+        function addEdge() {
+            const fromNode = document.getElementById('fromNode').value.trim();
+            const toNode = document.getElementById('toNode').value.trim();
+            const weight = parseInt(document.getElementById('edgeWeight').value.trim());
+
+            if (fromNode && toNode && weight && graph[fromNode] && graph[toNode]) {
+                // Обновляем граф для обоих направлений, если это не ориентированный граф
+                if (!graph[fromNode][toNode]) {
+                    graph[fromNode][toNode] = weight;
+                }
+                if (!graph[toNode][fromNode]) {
+                    graph[toNode][fromNode] = weight; // Если граф неориентированный
+                }
+
+                graphData.edges.add({
+                    from: fromNode,
+                    to: toNode,
+                    label: String(weight),
+                    font: { align: 'top' }
+                });
+
+                document.getElementById('fromNode').value = '';
+                document.getElementById('toNode').value = '';
+                document.getElementById('edgeWeight').value = '';
+                network.stabilize();
+            }
+        }
+
+        function submitForm() {
+            const startNode = document.getElementById('start').value;
+            fetch('/dijkstra', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    graph: graph,
+                    start: startNode
+                }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    document.getElementById('result').textContent = 'Error: ' + data.error;
+                } else {
+                    document.getElementById('result').textContent = JSON.stringify(data, null, 4);
+                }
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+        }
+
+        function clearGraph() {
+            graphData.nodes.clear();
+            graphData.edges.clear();
+            graph = {};
+            document.getElementById('result').textContent = 'Результат отобразится здесь...';
+            document.getElementById('start').value = 'A'; // Сброс стартовой ноды
+            visualizeGraph(); // Обновляем визуализацию
+        }
+
+        visualizeGraph();
+    </script>
+
+</body>
+</html>
